@@ -4,4 +4,4 @@
 
 # 使用方法
 在app.py的images和videos中填写alist链接，运行app.py，然后访问http://域名:5001
-![](https://www.bejson.com/static/bejson/img/logo.png)
+![](https://github.com/zhuzi6/alist-random/blob/main/image.png?raw=true)
