@@ -12,12 +12,12 @@ class AlistDownload:
         self.urls = {
             "images": [
                 {"name": "动漫1",
-                 "url": "https://alist.hloli.eu.org/115/%E5%9B%BE%E7%89%87/%E4%B8%89%E6%AC%A1%E5%85%83/%E5%A5%97%E5%9B%BE/%E4%B8%AD/%E7%88%86%E6%9C%BA%E5%B0%91%E5%A5%B3%E5%96%B5%E5%B0%8F%E5%90%89"},
+                 "url": ""},
                 # 添加其他图片链接
             ],
             "videos": [
                 {"name": "视频1",
-                 "url": "https://alist.hloli.eu.org/115/%E6%9D%82/%E8%A7%86%E9%A2%91/%E5%9B%BD%E4%BA%A7/%E6%8A%96%E9%9F%B3%E9%97%AA%E7%8E%B0"},
+                 "url": ""},
                 # 添加其他视频链接
             ]
         }
