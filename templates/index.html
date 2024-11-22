@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机文件</title>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to right, #ff6b6b, #f0e68c);
+            font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        nav {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            background-color: #ff69b4;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #ff1493;
+        }
+
+        select {
+            padding: 10px;
+            margin-right: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .content-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+        }
+
+        h2 {
+            color: #fff;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin: 0;
+            margin-bottom: 20px;
+            font-family: 'ZCOOL KuaiLe', cursive;
+        }
+
+        .img-container,
+        .video-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            padding: 10px;
+        }
+
+        .img-container {
+            flex-wrap: wrap;
+        }
+
+        .img-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .img-container img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .list-mode .img-container img {
+            width: calc(33.333% - 20px);
+        }
+
+        .list-mode .img-container {
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .display-mode .img-container img {
+            width: calc(100% - 20px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .modal-content {
+            max-width: 80%;
+            max-height: 80%;
+        }
+
+        @keyframes zoom {
+            from {
+                transform: scale(0)
+            }
+
+            to {
+                transform: scale(1)
+            }
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #ffffff;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-nav {
+            position: absolute;
+            top: 50%;
+            color: #ffffff;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .modal-nav.next {
+            right: 30px;
+        }
+
+        .modal-nav.prev {
+            left: 30px;
+        }
+
+        .modal-nav:hover,
+        .modal-nav:focus {
+            color: #bbb;
+        }
+
+        .download-button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #ff69b4;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .download-button:hover {
+            background-color: #ff1493;
+        }
+
+        .video-container {
+            width: 80%;
+            max-width: 1280px;
+            height: auto;
+            flex: 1;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            max-width: 100%;
+            max-height: 80vh;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <select id="category-select">
+            <option value="images">图片</option>
+            <option value="videos">视频</option>
+        </select>
+        <select id="link-select"></select>
+        <button id="refresh">刷新</button>
+        <button id="toggle-mode">列表模式</button>
+    </nav>
+    <div class="content-container">
+        <h2 id="current-name"></h2>
+        <div class="img-container" id="img-container"></div>
+        <div class="video-container" id="video-container"></div>
+    </div>
+
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+        <span class="close">&times;</span>
+        <span class="modal-nav prev">&#10094;</span>
+        <span class="modal-nav next">&#10095;</span>
+        <img class="modal-content" id="modal-img">
+        <a id="download-link" class="download-button" download>下载</a>
+    </div>
+
+    <script>
+        const urls = {{ urls | tojson }};
+        let isListMode = true;
+        let currentFiles = [];
+        let currentIndex = 0;
+        let lastLevelName = '';
+
+        document.getElementById('category-select').addEventListener('change', updateLinks);
+        document.getElementById('refresh').addEventListener('click', fetchFiles);
+        document.getElementById('toggle-mode').addEventListener('click', toggleMode);
+
+        function updateLinks() {
+            const category = document.getElementById('category-select').value;
+            const linkSelect = document.getElementById('link-select');
+            linkSelect.innerHTML = '';
+
+            urls[category].forEach(link => {
+                const option = document.createElement('option');
+                option.value = link.name;
+                option.textContent = link.name;
+                linkSelect.appendChild(option);
+            });
+
+            // Clear current files and display
+            document.getElementById('current-name').textContent = '';
+            document.getElementById('img-container').innerHTML = '';
+            document.getElementById('video-container').innerHTML = '';
+        }
+
+        function fetchFiles() {
+            const category = document.getElementById('category-select').value;
+            const linkName = document.getElementById('link-select').value;
+            fetch(`/random_files?category=${category}&name=${linkName}`)
+                .then(response => response.json())
+                .then(data => {
+                    const { last_level, files } = data;
+                    currentFiles = files;
+                    lastLevelName = last_level.name || '未命名';
+                    document.getElementById('current-name').textContent = lastLevelName;
+                    if (category === 'images') {
+                        displayFiles(files);
+                    } else if (category === 'videos' && files.length > 0) {
+                        playVideo(files);
+                    }
+                });
+        }
+
+        function displayFiles(files) {
+            const container = document.getElementById('img-container');
+            container.innerHTML = '';
+            files.forEach((item, index) => {
+                const img = document.createElement('img');
+                img.src = item.url;
+                img.dataset.index = index;
+                img.alt = item.name;
+                img.onclick = () => openModal(index);
+                container.appendChild(img);
+            });
+        }
+
+        function playVideo(files) {
+            const container = document.getElementById('video-container');
+            container.innerHTML = '';
+            if (files.length > 0) {
+                const randomFile = files[Math.floor(Math.random() * files.length)];
+                const video = document.createElement('video');
+                video.controls = true;
+                video.src = randomFile.url;
+                video.innerText = "Your browser does not support HTML5 video.";
+                document.getElementById('current-name').textContent = randomFile.name || '未命名';
+                container.appendChild(video);
+
+                // Adjust video size to fit container
+                adjustVideoSize(video);
+                window.addEventListener('resize', () => adjustVideoSize(video));
+            }
+        }
+
+        function adjustVideoSize(video) {
+            const aspectRatio = 16 / 9;
+            const container = video.parentElement;
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+
+            let videoWidth = containerWidth;
+            let videoHeight = containerWidth / aspectRatio;
+
+            if (videoHeight > containerHeight) {
+                videoHeight = containerHeight;
+                videoWidth = containerHeight * aspectRatio;
+            }
+
+            video.style.width = `${videoWidth}px`;
+            video.style.height = `${videoHeight}px`;
+        }
+
+        function toggleMode() {
+            isListMode = !isListMode;
+            document.body.classList.toggle('list-mode', isListMode);
+            document.body.classList.toggle('display-mode', !isListMode);
+            const modeButton = document.getElementById('toggle-mode');
+            modeButton.innerText = isListMode ? '展示模式' : '列表模式';
+        }
+
+        // Modal logic
+        const modal = document.getElementById("myModal");
+        const modalImg = document.getElementById("modal-img");
+        const closeButton = document.querySelector(".close");
+        const prevButton = document.querySelector(".modal-nav.prev");
+        const nextButton = document.querySelector(".modal-nav.next");
+        const downloadLink = document.getElementById("download-link");
+
+        closeButton.onclick = () => {
+            modal.style.display = "none";
+            document.getElementById('current-name').textContent = lastLevelName;
+        };
+
+        prevButton.onclick = () => navigateModal(-1);
+        nextButton.onclick = () => navigateModal(1);
+
+        function openModal(index) {
+            currentIndex = index;
+            modal.style.display = "flex";
+            modalImg.src = currentFiles[currentIndex].url;
+            downloadLink.href = currentFiles[currentIndex].url;
+            downloadLink.download = currentFiles[currentIndex].name || '图像';
+            document.getElementById('current-name').textContent = currentFiles[currentIndex].name || '未命名';
+        }
+
+        function navigateModal(direction) {
+            currentIndex = (currentIndex + direction + currentFiles.length) % currentFiles.length;
+            modalImg.src = currentFiles[currentIndex].url;
+            downloadLink.href = currentFiles[currentIndex].url;
+            downloadLink.download = currentFiles[currentIndex].name || '图像';
+            document.getElementById('current-name').textContent = currentFiles[currentIndex].name || '未命名';
+        }
+
+        // Initialize links selection
+        updateLinks();
+    </script>
+</body>
+
+</html>
